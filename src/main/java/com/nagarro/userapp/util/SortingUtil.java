@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public class SortingUtil {
 
-    private List<Users> sortUsers(List<Users> users, String sortType, String sortOrder) {
+    public static List<Users> sortUsers(List<Users> users, String sortType, String sortOrder) {
         Predicate<Users> sortingPredicate = getSortingPredicate(sortType, sortOrder);
         return users.stream()
                 .collect(Collectors.partitioningBy(sortingPredicate))
@@ -18,11 +18,12 @@ public class SortingUtil {
                 .collect(Collectors.toList());
     }
 
-    private Predicate<Users> getSortingPredicate(String sortType, String sortOrder) {
+    public static Predicate<Users> getSortingPredicate(String sortType, String sortOrder) {
+        sortType = sortType.toUpperCase();
         switch (sortType) {
-            case "Age":
+            case "AGE":
                 return user -> sortOrder.equalsIgnoreCase("even") == (user.getAge() % 2 != 0);
-            case "Name":
+            case "NAME":
                 return user -> sortOrder.equalsIgnoreCase("even") == (user.getName().length() % 2 != 0);
             default:
                 throw new IllegalArgumentException("Unsupported sortType: " + sortType);

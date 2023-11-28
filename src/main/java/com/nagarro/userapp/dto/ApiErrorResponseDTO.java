@@ -16,8 +16,6 @@ public class ApiErrorResponseDTO {
     private int code;
     private LocalDateTime timestamp;
 
-    // Constructors, getters, setters...
-
     public ApiErrorResponseDTO(String message, HttpStatus  code) {
         this.message = message;
         this.code = code.value();

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ApiErrorResponseDTO handleErrorResponse(Exception ex){
+        ex.printStackTrace();
         String msg = ex.getMessage();
         ApiErrorResponseDTO response = ApiErrorResponseDTO.builder()
                 .message(msg)

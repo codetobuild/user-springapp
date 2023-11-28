@@ -1,11 +1,14 @@
 package com.nagarro.userapp.service;
 
+import com.nagarro.userapp.dto.UsersResponseDTO;
 import com.nagarro.userapp.entities.Users;
 import com.nagarro.userapp.model.Gender;
 import com.nagarro.userapp.model.Nationality;
+import com.nagarro.userapp.model.PageInfo;
 import com.nagarro.userapp.repository.UserRepository;
 import com.nagarro.userapp.util.GenderMapper;
 import com.nagarro.userapp.util.NationalityMapper;
+import com.nagarro.userapp.util.SortingUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,31 +46,23 @@ public class UserService {
     @Autowired
     UserRepository userRepository;
 
-    public List<Users> getSortedUsersWithOffsetAndLimit(int offset, int limit, String sortType, String sortOrder) {
+    public UsersResponseDTO getSortedUsersWithOffsetAndLimit(int offset, int limit, String sortType, String sortOrder) {
         List<Users> dbUsers = userRepository.findUsersWithLimitAndOffset(offset, limit);
-        return sortUsers(dbUsers, sortType, sortOrder);
+        PageInfo pageInfo = this.getPageInfoWithLimitAndOffset(offset, limit);
+        return UsersResponseDTO.builder().data(dbUsers).pageInfo(pageInfo).build();
+     }
+
+
+    public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit){
+        long count = userRepository.count();
+        int totalPages = (int) Math.ceil((double) count / limit);
+
+        boolean hasNextPage = (offset + limit) < count;
+        boolean hasPreviousPage = offset > 0;
+
+        return PageInfo.builder().hasNextPage(hasNextPage).hasPreviousPage(hasPreviousPage).total(totalPages).build();
     }
 
-    private List<Users> sortUsers(List<Users> users, String sortType, String sortOrder) {
-        Predicate<Users> sortingPredicate = getSortingPredicate(sortType, sortOrder);
-        return users.stream()
-                .collect(Collectors.partitioningBy(sortingPredicate))
-                .values()
-                .stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
-    }
-
-    private Predicate<Users> getSortingPredicate(String sortType, String sortOrder) {
-        switch (sortType) {
-            case "Age":
-                return user -> sortOrder.equalsIgnoreCase("even") == (user.getAge() % 2 != 0);
-            case "Name":
-                return user -> sortOrder.equalsIgnoreCase("even") == (user.getName().length() % 2 != 0);
-            default:
-                throw new IllegalArgumentException("Unsupported sortType: " + sortType);
-        }
-    }
 
     public List<Users> createUser(Integer size) {
 
