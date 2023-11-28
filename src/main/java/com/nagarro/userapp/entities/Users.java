@@ -1,11 +1,10 @@
 package com.nagarro.userapp.entities;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -19,12 +18,26 @@ public class Users {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    String name;
-    String email;
-    String dob;
-    Integer age;
-    String gender;
-    String nationality;
-    String verification_status;
+    private String name;
+    private String email;
+    private String dob;
+    private Integer age;
+    private String gender;
+    private String nationality;
+    private String verification_status;
+    private LocalDateTime date_created;
+    private LocalDateTime date_modified;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        this.date_created = now;
+        this.date_modified = now;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.date_modified = LocalDateTime.now();
+    }
 
 }

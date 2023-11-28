@@ -63,8 +63,6 @@ public class UserMapper {
     }
 
     public static Users mapToUsersEntity(User user) {
-        System.out.println("aaaaggee" + user.getAge());
-        System.out.println("user: " + user);
 
         Users users = new Users();
         users.setName(user.getName());

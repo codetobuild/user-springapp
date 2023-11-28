@@ -9,12 +9,19 @@ import com.nagarro.userapp.util.NationalityMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.nagarro.userapp.model.User;
 import com.nagarro.userapp.util.UserMapper;
 import org.slf4j.Logger;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -35,6 +42,32 @@ public class UserService {
 
     @Autowired
     UserRepository userRepository;
+
+    public List<Users> getSortedUsersWithOffsetAndLimit(int offset, int limit, String sortType, String sortOrder) {
+        List<Users> dbUsers = userRepository.findUsersWithLimitAndOffset(offset, limit);
+        return sortUsers(dbUsers, sortType, sortOrder);
+    }
+
+    private List<Users> sortUsers(List<Users> users, String sortType, String sortOrder) {
+        Predicate<Users> sortingPredicate = getSortingPredicate(sortType, sortOrder);
+        return users.stream()
+                .collect(Collectors.partitioningBy(sortingPredicate))
+                .values()
+                .stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    private Predicate<Users> getSortingPredicate(String sortType, String sortOrder) {
+        switch (sortType) {
+            case "Age":
+                return user -> sortOrder.equalsIgnoreCase("even") == (user.getAge() % 2 != 0);
+            case "Name":
+                return user -> sortOrder.equalsIgnoreCase("even") == (user.getName().length() % 2 != 0);
+            default:
+                throw new IllegalArgumentException("Unsupported sortType: " + sortType);
+        }
+    }
 
     public List<Users> createUser(Integer size) {
 
