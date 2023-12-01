@@ -7,13 +7,12 @@ import com.nagarro.userapp.exceptions.ResourceNotFoundException;
 import com.nagarro.userapp.exceptions.ValidationException;
 import com.nagarro.userapp.service.UserService;
 import com.nagarro.userapp.validators.ValidatorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 @RestController
@@ -23,7 +22,6 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @GetMapping("/test")
     public String testApi() {
@@ -51,10 +49,10 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<List<Users>> createUsers(@RequestBody UserCreationDTO userRequestBody) throws  ValidationException{
+    public ResponseEntity<List<Users>> createUsers(@RequestBody UserCreationDTO userRequestBody) throws ValidationException, ExecutionException, InterruptedException {
         ValidatorUtils.validateUserCreationDTO(userRequestBody);
         List<Users> savedUsers = userService.createUser(userRequestBody.getSize());
-        return ResponseEntity.status(HttpStatus.OK).body(savedUsers);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUsers);
     }
 
 }

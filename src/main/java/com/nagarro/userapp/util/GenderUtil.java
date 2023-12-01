@@ -3,13 +3,10 @@ package com.nagarro.userapp.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nagarro.userapp.model.Gender;
-import com.nagarro.userapp.model.Nationality;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-public class GenderMapper {
+public class GenderUtil {
     public static Gender mapToGender(String responseBody) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -19,5 +16,18 @@ public class GenderMapper {
         } catch (IOException e) {
             throw new RuntimeException("Error mapping response to nationality", e);
         }
+    }
+
+    public static boolean isGenderValid(String userGender, Gender srcGender) {
+        if (userGender == null || userGender.trim().isEmpty()) {
+            return false;
+        }
+
+        if (srcGender == null || srcGender.getGender().trim().isEmpty()) {
+            return false;
+        }
+
+        return srcGender.getGender().equalsIgnoreCase(userGender);
+
     }
 }

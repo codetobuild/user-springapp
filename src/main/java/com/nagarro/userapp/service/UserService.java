@@ -6,25 +6,18 @@ import com.nagarro.userapp.model.Gender;
 import com.nagarro.userapp.model.Nationality;
 import com.nagarro.userapp.model.PageInfo;
 import com.nagarro.userapp.repository.UserRepository;
-import com.nagarro.userapp.util.GenderMapper;
-import com.nagarro.userapp.util.NationalityMapper;
-import com.nagarro.userapp.util.SortingUtil;
+import com.nagarro.userapp.util.GenderUtil;
+import com.nagarro.userapp.util.NationalityUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.nagarro.userapp.model.User;
 import com.nagarro.userapp.util.UserMapper;
-import org.slf4j.Logger;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 
 @Slf4j
@@ -32,88 +25,83 @@ import java.util.stream.Collectors;
 public class UserService {
 
     @Autowired
-    @Qualifier("randomUserWebClient")
-    WebClient randomUserWebClient;
-
-    @Autowired
-    @Qualifier("nationalityWebClient")
-    WebClient nationalityWebClient;
-
-    @Autowired
-    @Qualifier("genderizeWebClient")
-    WebClient genderizeWebClient;
-
-    @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    ApiService apiService;
 
     public UsersResponseDTO getSortedUsersWithOffsetAndLimit(int offset, int limit, String sortType, String sortOrder) {
         List<Users> dbUsers = userRepository.findUsersWithLimitAndOffset(offset, limit);
         PageInfo pageInfo = this.getPageInfoWithLimitAndOffset(offset, limit);
         return UsersResponseDTO.builder().data(dbUsers).pageInfo(pageInfo).build();
-     }
+    }
 
 
-    public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit){
+    public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit) {
         long count = userRepository.count();
         int totalPages = (int) Math.ceil((double) count / limit);
 
         boolean hasNextPage = (offset + limit) < count;
         boolean hasPreviousPage = offset > 0;
 
-        return PageInfo.builder().hasNextPage(hasNextPage).hasPreviousPage(hasPreviousPage).total(totalPages).build();
+        return PageInfo.builder().hasNextPage(hasNextPage).hasPreviousPage(hasPreviousPage).total(count).build();
     }
 
 
-    public List<Users> createUser(Integer size) {
+    public List<Users> createUser(Integer size) throws InterruptedException, ExecutionException {
 
-        List<User> userList = randomUserWebClient.get()
-                .uri("/api?results=" + size)
-                .retrieve()
-                .bodyToMono(String.class)
-                .map(UserMapper::mapToUser)
-                .block();
+        List<User> userList = apiService.getRandomUsers(size);
 
-         for(User user : userList){
+        List<CompletableFuture<User>> userVerifications = userList.stream()
+                .map(user -> {
+                    try {
+                        return verifyUser(user, apiService);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .toList();
 
-             String userNationality = user.getNationality();
-             String userGender = user.getGender();
-             String name = user.getFirstname();
+        CompletableFuture<Void> allVerifications = CompletableFuture.allOf(
+                userVerifications.toArray(new CompletableFuture[0])
+        );
 
-             System.out.println(name);
+        // Wait for all user verifications to complete
+        allVerifications.join();
 
-             // verify nationality
-             List<Nationality> nationalityList = nationalityWebClient.get()
-                     .uri("?name=" + name)
-                     .retrieve()
-                     .bodyToMono(String.class)
-                     .map(NationalityMapper::mapToNationality)
-                     .block();
-             boolean isNationalityValid = nationalityList!=null && nationalityList.stream().anyMatch(s -> s.getNational().equalsIgnoreCase(userNationality));
+        List<User> verificationCheckedUsers = userVerifications.stream()
+                .map(CompletableFuture::join) // Extract the User result from each CompletableFuture
+                .toList();
 
-             // verify gender
-             Gender gender= genderizeWebClient.get()
-                     .uri("?name=" + name)
-                     .retrieve()
-                     .bodyToMono(String.class)
-                     .map(GenderMapper::mapToGender)
-                     .block();
-             boolean isGenderValid = gender != null && gender.getGender()!=null && gender.getGender().equalsIgnoreCase(userGender);
+        List<Users> usersToBeSaved = UserMapper.mapToUsersList(verificationCheckedUsers);
+        List<Users> savedUsers = userRepository.saveAll(usersToBeSaved);
 
-             String verificationStatus = "TO_BE_VERIFIED";
-             if(isNationalityValid && isGenderValid){
-                 verificationStatus = "VERIFIED";
-             }
-              user.setVerification_status(verificationStatus);
-
-         }
-
-
-         List<Users> usersToBeSaved = UserMapper.mapToUsersList(userList);
-         List<Users> savedUsers = userRepository.saveAll(usersToBeSaved);
-
-         log.info("Users Saved successfully to DB total users = {}", savedUsers.size());
 
          return savedUsers;
+     }
+
+
+    private CompletableFuture<User> verifyUser(User user, ApiService apiService) throws InterruptedException {
+        String userNationality = user.getNationality();
+        String userGender = user.getGender();
+
+        CompletableFuture<List<Nationality>> futureNationality = apiService.getNationalityWithUserName(userNationality);
+        CompletableFuture<Gender> futureGender = apiService.getGenderByUserName(userGender);
+
+        return CompletableFuture.allOf(futureNationality, futureGender)
+                .thenApply(ignored -> {
+                    List<Nationality> nationalityList = futureNationality.join();
+                    Gender gender = futureGender.join();
+
+                    boolean isNationalityAndGenderVerified = GenderUtil.isGenderValid(userGender, gender)
+                            && NationalityUtil.isUserNationalityValid(userNationality, nationalityList);
+
+                    String verificationStatus = isNationalityAndGenderVerified ? "VERIFIED" : "TO_BE_VERIFIED";
+                    user.setVerification_status(verificationStatus);
+
+                    return user;
+                });
     }
 
 }
+

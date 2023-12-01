@@ -11,6 +11,6 @@ import lombok.*;
 public class PageInfo {
     private boolean hasNextPage;
     private boolean hasPreviousPage;
-    private int total;
+    private long total;
 
 }
