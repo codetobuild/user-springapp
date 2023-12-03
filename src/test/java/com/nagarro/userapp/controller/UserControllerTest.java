@@ -129,5 +129,4 @@ class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].nationality").value("IN"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].verification_status").value("VERIFIED"));
     }
-
 }

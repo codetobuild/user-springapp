@@ -8,6 +8,10 @@ import com.nagarro.userapp.model.PageInfo;
 import com.nagarro.userapp.repository.UserRepository;
 import com.nagarro.userapp.util.GenderUtil;
 import com.nagarro.userapp.util.NationalityUtil;
+import com.nagarro.userapp.util.SortingUtil;
+import com.nagarro.userapp.util.sorter.SortByAgeStrategy;
+import com.nagarro.userapp.util.sorter.SortByNameStrategy;
+import com.nagarro.userapp.util.sorter.UserSortContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,8 +35,11 @@ public class UserService {
 
     public UsersResponseDTO getSortedUsersWithOffsetAndLimit(int offset, int limit, String sortType, String sortOrder) {
         List<Users> dbUsers = userRepository.findUsersWithLimitAndOffset(offset, limit);
+        List<Users> sortedUsers = SortingUtil.sortUsersByStrategy(dbUsers, sortType, sortOrder);
+
         PageInfo pageInfo = this.getPageInfoWithLimitAndOffset(offset, limit);
-        return UsersResponseDTO.builder().data(dbUsers).pageInfo(pageInfo).build();
+
+        return UsersResponseDTO.builder().data(sortedUsers).pageInfo(pageInfo).build();
     }
 
     public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit) {
