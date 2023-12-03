@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-
 @Slf4j
 @Service
 public class UserService {
@@ -36,7 +35,6 @@ public class UserService {
         return UsersResponseDTO.builder().data(dbUsers).pageInfo(pageInfo).build();
     }
 
-
     public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit) {
         long count = userRepository.count();
         int totalPages = (int) Math.ceil((double) count / limit);
@@ -46,7 +44,6 @@ public class UserService {
 
         return PageInfo.builder().hasNextPage(hasNextPage).hasPreviousPage(hasPreviousPage).total(count).build();
     }
-
 
     public List<Users> createUser(Integer size) throws InterruptedException, ExecutionException {
 
@@ -76,10 +73,8 @@ public class UserService {
         List<Users> usersToBeSaved = UserMapper.mapToUsersList(verificationCheckedUsers);
         List<Users> savedUsers = userRepository.saveAll(usersToBeSaved);
 
-
          return savedUsers;
      }
-
 
     private CompletableFuture<User> verifyUser(User user, ApiService apiService) throws InterruptedException {
         String userNationality = user.getNationality();

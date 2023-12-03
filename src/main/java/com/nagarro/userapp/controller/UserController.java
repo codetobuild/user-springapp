@@ -22,20 +22,6 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-
-    @GetMapping("/test")
-    public String testApi() {
-        try {
-            throw new ResourceNotFoundException("test resource not found");
-        } catch (ResourceNotFoundException ex) {
-            // Optionally log or handle the exception
-            throw ex; // Rethrow the caught exception
-        }catch (Exception ex){
-            System.out.println("#######Error########");
-        }
-        return "api success";
-    }
-
     @GetMapping
     public ResponseEntity<UsersResponseDTO> getUsers(
             @RequestParam String sortType,

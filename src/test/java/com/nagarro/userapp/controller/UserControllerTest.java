@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -40,11 +41,42 @@ class UserControllerTest {
 
     @Test
     void getUsers() throws Exception {
-        List<Users> usersList = new ArrayList<>();
-        usersList.add(Users.builder().id(1).name("John Doe").email("john@doe.com").dob("1994-12-28T12:16:12.072Z").age(30).gender("male").nationality("NZ").verification_status("VERIFIED").build());
-        usersList.add(Users.builder().id(1).name("Lucy Gibson").email("lucy@example.com").dob("1994-12-28T12:16:12.072Z").age(30).gender("female").nationality("NZ").verification_status("VERIFIED").build());
-        PageInfo pageInfo = PageInfo.builder().hasNextPage(true).hasPreviousPage(false).total(2).build();
-        when(userService.getSortedUsersWithOffsetAndLimit(0, 2, "Age", "even")).thenReturn(UsersResponseDTO.builder().data(usersList).pageInfo(pageInfo).build());
+        Users user1 = Users.builder()
+                .id(1)
+                .name("John Doe")
+                .email("john@doe.com")
+                .dob("1994-12-28T12:16:12.072Z")
+                .age(30)
+                .gender("male")
+                .nationality("NZ")
+                .verification_status("VERIFIED")
+                .build();
+
+        Users user2 = Users.builder()
+                .id(2)
+                .name("Lucy Gibson")
+                .email("lucy@example.com")
+                .dob("1994-12-28T12:16:12.072Z")
+                .age(30)
+                .gender("female")
+                .nationality("US")
+                .verification_status("NOT_VERIFIED")
+                .build();
+
+        List<Users> usersList = Arrays.asList(user1, user2);
+
+        PageInfo pageInfo = PageInfo.builder()
+                .hasNextPage(true)
+                .hasPreviousPage(false)
+                .total(usersList.size())
+                .build();
+
+        UsersResponseDTO responseDTO = UsersResponseDTO.builder()
+                .data(usersList)
+                .pageInfo(pageInfo)
+                .build();
+
+        when(userService.getSortedUsersWithOffsetAndLimit(0, 2, "Age", "even")).thenReturn(responseDTO);
 
         mockMvc.perform(get("/api/users")
                         .param("sortType", "Age")
@@ -54,28 +86,31 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(lessThanOrEqualTo(2))))
                 .andExpect(jsonPath("$.data.[0].id").value(1))
+                .andExpect(jsonPath("$.data.[1].id").value(2))
+                .andExpect(jsonPath("$.data.[0].nationality").value("NZ"))
+                .andExpect(jsonPath("$.data.[1].nationality").value("US"))
                 .andExpect(jsonPath("$.data.[1].name").value("Lucy Gibson"))
                 .andExpect(jsonPath("$.pageInfo").exists());
     }
 
     @Test
     void createUsers() throws Exception {
-        UserCreationDTO userCreationDTO = new UserCreationDTO();
-        userCreationDTO.setSize(1);
+        int size = 1;
+        UserCreationDTO userCreationDTO = UserCreationDTO.builder().size(size).build();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        List<Users> savedUsers = Arrays.asList(
+        List<Users> savedUsers = Collections.singletonList(
                 Users.builder()
                         .id(1)
-                        .name("Saisha Tipparti")
-                        .email("saisha.tipparti@example.com")
+                        .name("John Doe")
+                        .email("John.doe@example.com")
                         .dob("1987-04-24T18:25:58.908Z")
                         .age(36)
                         .gender("female")
                         .nationality("IN")
                         .verification_status("VERIFIED")
-                        .date_created(LocalDateTime.parse("2023-11-27T20:05:08.059794"))
-                        .date_modified(LocalDateTime.parse("2023-11-27T20:05:08.059794"))
+                        .date_created(LocalDateTime.now())
+                        .date_modified(LocalDateTime.now())
                         .build()
         );
 
@@ -88,9 +123,11 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(userCreationDTO))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$", hasSize(1)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$", hasSize(size)))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.[0].name").value("Saisha Tipparti"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.[0].name").value("John Doe"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.[0].nationality").value("IN"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].verification_status").value("VERIFIED"));
-     }
+    }
+
 }
