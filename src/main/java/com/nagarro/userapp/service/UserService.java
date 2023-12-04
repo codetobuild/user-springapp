@@ -9,16 +9,11 @@ import com.nagarro.userapp.repository.UserRepository;
 import com.nagarro.userapp.util.GenderUtil;
 import com.nagarro.userapp.util.NationalityUtil;
 import com.nagarro.userapp.util.SortingUtil;
-import com.nagarro.userapp.util.sorter.SortByAgeStrategy;
-import com.nagarro.userapp.util.sorter.SortByNameStrategy;
-import com.nagarro.userapp.util.sorter.UserSortContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import com.nagarro.userapp.model.User;
 import com.nagarro.userapp.util.UserMapper;
-import org.springframework.web.reactive.function.client.WebClient;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -42,15 +37,7 @@ public class UserService {
         return UsersResponseDTO.builder().data(sortedUsers).pageInfo(pageInfo).build();
     }
 
-    public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit) {
-        long count = userRepository.count();
-        int totalPages = (int) Math.ceil((double) count / limit);
 
-        boolean hasNextPage = (offset + limit) < count;
-        boolean hasPreviousPage = offset > 0;
-
-        return PageInfo.builder().hasNextPage(hasNextPage).hasPreviousPage(hasPreviousPage).total(count).build();
-    }
 
     public List<Users> createUser(Integer size) throws InterruptedException, ExecutionException {
 
@@ -103,6 +90,16 @@ public class UserService {
 
                     return user;
                 });
+    }
+
+    public PageInfo getPageInfoWithLimitAndOffset(int offset, int limit) {
+        long count = userRepository.count();
+        int totalPages = (int) Math.ceil((double) count / limit);
+
+        boolean hasNextPage = (offset + limit) < count;
+        boolean hasPreviousPage = offset > 0;
+
+        return PageInfo.builder().hasNextPage(hasNextPage).hasPreviousPage(hasPreviousPage).total(count).build();
     }
 
 }

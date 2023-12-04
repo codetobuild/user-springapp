@@ -40,41 +40,16 @@ class UserControllerTest {
     private UserService userService;
 
     @Test
-    void getUsers() throws Exception {
-        Users user1 = Users.builder()
-                .id(1)
-                .name("John Doe")
-                .email("john@doe.com")
-                .dob("1994-12-28T12:16:12.072Z")
-                .age(30)
-                .gender("male")
-                .nationality("NZ")
-                .verification_status("VERIFIED")
-                .build();
+    void getUsersTest() throws Exception {
+        Users user1 = Users.builder().id(1).name("John Doe").email("john@doe.com").dob("1994-12-28T12:16:12.072Z").age(30).gender("male").nationality("NZ").verification_status("VERIFIED").build();
 
-        Users user2 = Users.builder()
-                .id(2)
-                .name("Lucy Gibson")
-                .email("lucy@example.com")
-                .dob("1994-12-28T12:16:12.072Z")
-                .age(30)
-                .gender("female")
-                .nationality("US")
-                .verification_status("NOT_VERIFIED")
-                .build();
+        Users user2 = Users.builder().id(2).name("Lucy Gibson").email("lucy@example.com").dob("1994-12-28T12:16:12.072Z").age(30).gender("female").nationality("US").verification_status("NOT_VERIFIED").build();
 
-        List<Users> usersList = Arrays.asList(user1, user2);
+        List<Users> expectedUsersList = Arrays.asList(user1, user2);
 
-        PageInfo pageInfo = PageInfo.builder()
-                .hasNextPage(true)
-                .hasPreviousPage(false)
-                .total(usersList.size())
-                .build();
+        PageInfo pageInfo = PageInfo.builder().hasNextPage(true).hasPreviousPage(false).total(expectedUsersList.size()).build();
 
-        UsersResponseDTO responseDTO = UsersResponseDTO.builder()
-                .data(usersList)
-                .pageInfo(pageInfo)
-                .build();
+        UsersResponseDTO responseDTO = UsersResponseDTO.builder().data(expectedUsersList).pageInfo(pageInfo).build();
 
         when(userService.getSortedUsersWithOffsetAndLimit(0, 2, "Age", "even")).thenReturn(responseDTO);
 
@@ -93,26 +68,28 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.pageInfo").exists());
     }
 
+
     @Test
-    void createUsers() throws Exception {
+    public void shouldThrowBadRequestException_whenInvalidQueryParameter() throws Exception {
+        mockMvc.perform(get("/api/users")
+                        .param("sortType", "Age")
+                        .param("sortOrder", "even")
+                        .param("limit", "16")
+                        .param("offset", "invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(status().is4xxClientError());
+
+    }
+
+
+    @Test
+    void createUsersTest() throws Exception {
         int size = 1;
         UserCreationDTO userCreationDTO = UserCreationDTO.builder().size(size).build();
         ObjectMapper objectMapper = new ObjectMapper();
 
         List<Users> savedUsers = Collections.singletonList(
-                Users.builder()
-                        .id(1)
-                        .name("John Doe")
-                        .email("John.doe@example.com")
-                        .dob("1987-04-24T18:25:58.908Z")
-                        .age(36)
-                        .gender("female")
-                        .nationality("IN")
-                        .verification_status("VERIFIED")
-                        .date_created(LocalDateTime.now())
-                        .date_modified(LocalDateTime.now())
-                        .build()
-        );
+                Users.builder().id(1).name("John Doe").email("John.doe@example.com").dob("1987-04-24T18:25:58.908Z").age(36).gender("female").nationality("IN").verification_status("VERIFIED").date_created(LocalDateTime.now()).date_modified(LocalDateTime.now()).build());
 
         // Mock the userService behavior
         when(userService.createUser(1)).thenReturn(savedUsers);
@@ -129,4 +106,6 @@ class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].nationality").value("IN"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].verification_status").value("VERIFIED"));
     }
+
+
 }

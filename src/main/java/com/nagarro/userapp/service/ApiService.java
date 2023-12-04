@@ -42,7 +42,6 @@ public class ApiService {
 
         return userList;
     }
-
     @Async("asyncExecutor")
     public CompletableFuture<List<Nationality>> getNationalityWithUserName(String name) throws InterruptedException {
         return nationalityWebClient.get()
@@ -51,8 +50,7 @@ public class ApiService {
                 .bodyToMono(String.class)
                 .map(NationalityUtil::mapToNationality)
                 .toFuture();
-//        return CompletableFuture.completedFuture(nationalityList);
-    }
+     }
 
 
     @Async("asyncExecutor")

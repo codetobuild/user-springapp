@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -26,12 +27,14 @@ public class UserController {
     public ResponseEntity<UsersResponseDTO> getUsers(
             @RequestParam String sortType,
             @RequestParam String sortOrder,
-            @RequestParam(defaultValue = "5") int limit,
-            @RequestParam(defaultValue = "0") int offset
+            @RequestParam("limit") String qLimit,
+            @RequestParam("offset") String qOffset
     ) {
-        ValidatorUtils.validateUserParams(sortType, sortOrder, limit, offset);
-        UsersResponseDTO res = userService.getSortedUsersWithOffsetAndLimit(offset, limit, sortType, sortOrder);
-        return ResponseEntity.status(HttpStatus.OK).body(res);
+
+        ValidatorUtils.validateUserParams(sortType, sortOrder, qLimit, qOffset);
+        UsersResponseDTO queriedUsersList = userService.getSortedUsersWithOffsetAndLimit(Integer.parseInt(qOffset), Integer.parseInt(qLimit), sortType, sortOrder);
+        return ResponseEntity.status(HttpStatus.OK).body(queriedUsersList);
+
     }
 
     @PostMapping

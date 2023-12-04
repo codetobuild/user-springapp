@@ -20,11 +20,12 @@ public class ValidatorUtils {
         }
     }
 
-    public static void validateUserParams(String sortType, String sortOrder, int limit, int offset) throws ValidationException {
+    public static void validateUserParams(String sortType, String sortOrder, String s_limit, String s_offset) throws ValidationException {
         validateSortType(sortType);
         validateSortOrder(sortOrder);
-        validateLimit(limit);
-        validateOffset(offset);
+        validateLimits(s_limit);
+        validateOffset(s_offset);
+
     }
 
     private static void validateSortType(String sortType) throws ValidationException {
@@ -50,20 +51,31 @@ public class ValidatorUtils {
 
     }
 
-    private static void validateLimit(int limit) throws ValidationException {
+
+    private static void validateLimits(String s_limit) throws ValidationException {
         Validator numericValidator = ValidatorFactory.getValidator("numeric");
 
-        if (!numericValidator.validate(String.valueOf(limit)) || limit <= 0 || limit > 5) {
-            throw new ValidationException("Invalid limit query value");
+
+        if (!numericValidator.validate(String.valueOf(s_limit))) {
+            throw new ValidationException("Invalid limit query value. Please provide a numeric value for limit.");
         }
 
+        int limit = Integer.parseInt(s_limit);
+
+        if (limit <= 0 || limit > 5) {
+            throw new ValidationException("Invalid limit query value. Limit value must be between 0 and 5   inclusive");
+        }
     }
 
-    private static void validateOffset(int offset) throws ValidationException {
+    private static void validateOffset(String s_offset) throws ValidationException {
         Validator numericValidator = ValidatorFactory.getValidator("numeric");
+        if (!numericValidator.validate(String.valueOf(s_offset))) {
+            throw new ValidationException("Invalid offset query value. Please provide a numeric value for offset.");
+        }
+        int offset = Integer.parseInt(s_offset);
 
         if (!numericValidator.validate(String.valueOf(offset)) || offset < 0 || offset > 5) {
-            throw new ValidationException("Invalid offset query value");
+            throw new ValidationException("Invalid offset query value. Offset value must be between 0 and 5 inclusive");
         }
     }
 
