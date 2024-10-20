@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springboot-crud-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springboot-crud-app
+  template:
+    metadata:
+      labels:
+        app: springboot-crud-app
+    spec:
+      containers:
+        - name: springboot-crud-container
+          image: nokha/springboot-crud-app:latest
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/usersdb
+            - name: SPRING_DATASOURCE_USERNAME
+              value: appuser
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: appuser

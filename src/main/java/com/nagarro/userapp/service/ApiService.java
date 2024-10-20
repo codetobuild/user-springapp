@@ -52,7 +52,6 @@ public class ApiService {
                 .toFuture();
      }
 
-
     @Async("asyncExecutor")
     public CompletableFuture<Gender> getGenderByUserName(String name) {
         return  genderizeWebClient.get()
